@@ -61,7 +61,7 @@ extern "C" {
 #ifdef CCLI_DEBUG
 #if CCLI_DEBUG == 0
 #define ccli__debugf(msg, ...) fprintf(stderr, "[DBG] " msg "\n", ##__VA_ARGS__);
-#else
+#elif CCLI_DEBUG == 1
 #define ccli__debugf(msg, ...) fprintf(stderr, "%s:%d: [DBG] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #endif // CCLI_DEBUG 1
 #else
@@ -915,8 +915,8 @@ const char *ccli_parse_opts(ccli_command *subcommands, ccli_option *options, int
     const char *subcommand = cmd_idx > 1 ? subcommands[cmd_idx - 2].command : NULL;
     ccli__debugf("subcommand is %s", subcommand == NULL ? "<none>" : subcommand);
     ccli__find_help(subcommands, subcommand, options, argc, argv, examples);
-    ccli__debugf("found no help command. proceeding with parsing")
-        size_t opt_count = ccli__opt_len(options);
+    ccli__debugf("found no help command. proceeding with parsing");
+    size_t opt_count = ccli__opt_len(options);
     ccli__debugf("got %lu options to parse", opt_count);
     for (int argc_idx = 1 + (cmd_idx > 1); argc_idx < argc; argc_idx++) {
         char *arg = argv[argc_idx];
@@ -941,8 +941,8 @@ const char *ccli_parse_opts(ccli_command *subcommands, ccli_option *options, int
         }
 
         if (ccli_strcontains(arg, '=')) {
-            ccli__debugf("item contains =. parsing as equals expr")
-                ccli__parse_equals(bin, options, arg, cmd_idx);
+            ccli__debugf("item contains =. parsing as equals expr");
+            ccli__parse_equals(bin, options, arg, cmd_idx);
             continue;
         }
 
@@ -990,7 +990,8 @@ const char *ccli_parse_opts(ccli_command *subcommands, ccli_option *options, int
                 } break;
                 }
                 break;
-            } else if ((is_long && ccli__long_opt_eq(arg, opt.long_arg)) || (short_opt == ccli_short_single && arg[1] == opt.short_arg)) {
+            } else if (!opt.positional && ((is_long && ccli__long_opt_eq(arg, opt.long_arg)) || (short_opt == ccli_short_single && arg[1] == opt.short_arg))) {
+                ccli__debugf("        option %s matches", opt.long_arg);
                 matched_arg = true;
                 options[opt_search].matched = true;
 
@@ -1042,7 +1043,7 @@ const char *ccli_parse_opts(ccli_command *subcommands, ccli_option *options, int
                     }
                 }
                 break;
-            } else if (!is_long && short_opt == ccli_short_multiple) {
+            } else if (!is_long && !opt.positional && short_opt == ccli_short_multiple) {
                 ccli_fatal(bin, "Multiple shorthand options at once are not yet supported"); // TODO
                 // break;
             }
